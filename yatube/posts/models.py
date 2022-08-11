@@ -35,7 +35,6 @@ class Post(models.Model):
         upload_to='posts/',
         blank=True
     )
-        
 
     class Meta:
         ordering = ('-pub_date',)
@@ -46,7 +45,7 @@ class Post(models.Model):
         return self.text[:settings.SLICE]
 
 
-class Comment(models.Model): 
+class Comment(models.Model):
     post = models.ForeignKey(
         Post,
         on_delete=models.CASCADE,
@@ -61,6 +60,7 @@ class Comment(models.Model):
 
     def __str__(self):
         return self.text
+
 
 class Follow(models.Model):
     user = models.ForeignKey(

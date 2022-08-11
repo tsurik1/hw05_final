@@ -122,4 +122,4 @@ CACHES = {
     'index_page': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     }
-} 
+}

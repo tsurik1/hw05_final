@@ -2,10 +2,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
 
-from posts.forms import PostForm, CommentForm
+from posts.forms import CommentForm, PostForm
 
-from .models import Group, Post, User, Follow
+from .models import Follow, Group, Post, User
 from .utils import get_page_obj
+
 
 @cache_page(20, key_prefix='index_page')
 def index(request):
@@ -38,6 +39,7 @@ def profile(request, username):
         'following': following
     }
     return render(request, 'posts/profile.html', context)
+
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -80,6 +82,7 @@ def post_edit(request, post_id):
     }
     return render(request, 'posts/create_post.html', context)
 
+
 @login_required
 def add_comment(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -90,7 +93,8 @@ def add_comment(request, post_id):
         comment.post = post
         comment.save()
     return redirect('posts:post_detail', post_id=post_id)
-    
+
+
 @login_required
 def follow_index(request):
     posts = Post.objects.filter(
@@ -99,6 +103,7 @@ def follow_index(request):
         'page_obj': get_page_obj(request, posts)
     }
     return render(request, 'posts/follow.html', context)
+
 
 @login_required
 def profile_follow(request, username):
@@ -116,4 +121,3 @@ def profile_unfollow(request, username):
     if is_following.exists():
         is_following.delete()
     return redirect('posts:profile', username=username)
-    

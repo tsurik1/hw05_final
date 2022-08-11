@@ -1,20 +1,21 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
-from django.core.files.uploadedfile import SimpleUploadedFile
-from ..models import Group, Post, User, Comment, Follow
+
+from ..models import Comment, Follow, Group, Post, User
 
 
 class PostFormTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username='auth')
-        cls.small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         cls.uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -100,7 +101,7 @@ class PostFormTest(TestCase):
             text='test text',
             group=new_group,
         )
-        
+
         test_group = Group.objects.create(
             title='test',
             slug='sluggi',
@@ -176,7 +177,7 @@ class PostFormTest(TestCase):
         self.assertEqual(Follow.objects.count(), follows_count + 1)
         self.authorized_client.get(
             reverse('posts:profile_unfollow', args=(self.user.username,)),
-            )  
+        )
         self.assertEqual(Follow.objects.count(), follows_count)
 
     def test_user_feed(self):
@@ -187,7 +188,7 @@ class PostFormTest(TestCase):
         post = Post.objects.create(
             author=self.user,
             text='perfect'
-            )
+        )
         authorized_client.get(
             reverse('posts:profile_follow', args=(self.user.username,)),
             follow=True)
