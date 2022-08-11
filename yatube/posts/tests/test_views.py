@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 from random import randint
 
@@ -46,6 +47,11 @@ class TaskPagesTests(TestCase):
             group=cls.group,
             image=cls.uploaded
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.authorized_client = Client()
