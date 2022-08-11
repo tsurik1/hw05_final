@@ -84,14 +84,9 @@ class StaticURLTests(TestCase):
         self.assertTemplateUsed(response, 'core/404.html')
 
     def test_urls_403(self):
-        """Страница 500 отдает соответсвующий шаблон."""
+        """Страница 403 отдает соответсвующий шаблон."""
         response = self.client.get('/unexisting_page/')
         self.assertTemplateUsed(response, 'core/403csrf.html')
-
-    # def test_urls_500(self):
-    #     """Страница 403 отдает соответсвующий шаблон."""
-    #     response = self.client.get('/unexisting_page/')
-    #     self.assertTemplateUsed(response, 'core/404.html')
 
     def test_private_pages_for_author(self):
         """Тестирование доступности шаблонов приватных страниц автора."""
