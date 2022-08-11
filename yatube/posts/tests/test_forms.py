@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from http import HTTPStatus
 
 from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -153,7 +154,7 @@ class PostFormTest(TestCase):
         response = self.client.post(reverse(
             'posts:add_comment', args=(self.post.id,)), data=form_data
         )
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
     def test_after_submitting_the_comment_appears_on_the_page(self):
         """Проверка: после отправки коммент появляется на стр."""
