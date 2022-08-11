@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Посты авторов{% endblock %}
+{% block content %}
+  <h1>Посты авторов</h1>
+  {% include 'posts/includes/switcher.html' %}
+  {% for post in page_obj %}
+    {% include 'posts/includes/page_objects.html' %}
+    {% if post.group %}
+      <a href="{% url 'posts:group_list' post.group.slug %}">все записи группы {{ post.group.title }}</a>
+    {% endif %}
+    {% if not forloop.last %}<hr>{% endif %}
+  {% endfor %}
+  {% include 'posts/includes/paginator.html' %}
+{% endblock %}
