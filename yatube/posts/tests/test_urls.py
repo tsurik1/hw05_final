@@ -45,7 +45,8 @@ class StaticURLTests(TestCase):
 
     def test_private_address_redirect(self):
         """Приватные адреса не доступны для неавторизованных 
-        пользователей, ведут на страницу авторизации."""
+        пользователей, ведут на страницу авторизации.
+        """
         lgn = reverse('users:login')
         templates_url_names = (
             reverse('posts:create_post'),
@@ -72,7 +73,8 @@ class StaticURLTests(TestCase):
     def test_not_the_author_leads_to_the_post_view_page(self):
         """Адрес редактирования поста для 
         авторизованного пользователя, не являющегося 
-        автором поста, должен вести на страницу просмотра поста."""
+        автором поста, должен вести на страницу просмотра поста.
+        """
         user = User.objects.create_user(username='username')
         self.authorized_client.force_login(user)
         response = self.authorized_client.post(
@@ -82,7 +84,8 @@ class StaticURLTests(TestCase):
 
     def test_unexisting(self):
         """Неавторизованный пользователь при запросе
-        несуществующей страницы  переходит на 404."""
+        несуществующей страницы  переходит на 404.
+        """
         response = self.client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
@@ -102,7 +105,8 @@ class StaticURLTests(TestCase):
 
     def test_urls_uses_correct_template(self):
         """Доступность шаблонов публичных страниц
-        неавторизованному пользователю."""
+        неавторизованному пользователю.
+        """
         templates_url_names = {
             'posts/index.html': reverse('posts:index'),
             'posts/group_list.html': reverse(

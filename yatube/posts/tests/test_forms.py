@@ -59,7 +59,8 @@ class PostFormTest(TestCase):
 
     def test_count_post(self):
         """Создание поста при отправке валидной
-        формы авторизованным пользователем."""
+        формы авторизованным пользователем.
+        """
         posts_count = Post.objects.count()
         form_data = {
             'text': 'Тестовый пост',
@@ -106,7 +107,8 @@ class PostFormTest(TestCase):
 
     def test_redirect_client_to_login(self):
         """Неавторизованный пользователь не может создать пост,
-        и его перенаправляет на страницу авторизации."""
+        и его перенаправляет на страницу авторизации.
+        """
         posts_count = Post.objects.count()
         response = self.guest_client.post(
             reverse('posts:create_post'), follow=True
@@ -118,7 +120,8 @@ class PostFormTest(TestCase):
 
     def test_redirect(self):
         """Авторизованный пользователь не может редактировать 
-        чужой пост и перенаправляется на страницу поста."""
+        чужой пост и перенаправляется на страницу поста.
+        """
         new_group = Group.objects.create(
             title='test group',
             slug='slugg',
@@ -151,7 +154,8 @@ class PostFormTest(TestCase):
 
     def test_an_authorized_user_can_create_a_comment(self):
         """Авторизованный пользователь может создать комментарий, 
-        происходит редирект на страницу поста."""
+        происходит редирект на страницу поста.
+        """
         comments_count = Comment.objects.count()
         form_data = {
             'text': 'Тестовый текст из формы теста',
@@ -174,7 +178,8 @@ class PostFormTest(TestCase):
 
     def test_only_authorized_user_can_comment(self):
         """Неавторизованный пользователь не может создать комментарий,
-        происходит редирект на страницу авторизации."""
+        происходит редирект на страницу авторизации.
+        """
         form_data = {
             'text': 'test comment',
         }

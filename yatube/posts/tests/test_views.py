@@ -138,7 +138,8 @@ class FollowTests(TestCase):
 
     def test_an_authorized_user_can_follow(self):
         """Авторизованный пользователь может
-        подписываться на других пользователей."""
+        подписываться на других пользователей.
+        """
         follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
         self.authorized = Client()
@@ -150,7 +151,8 @@ class FollowTests(TestCase):
 
     def test_an_authorized_user_can_unfollow(self):
         """Авторизованный пользователь может
-        отписываться от других пользователей."""
+        отписываться от других пользователей.
+        """
         follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
         self.authorized = Client()
@@ -165,7 +167,8 @@ class FollowTests(TestCase):
 
     def test_new_user_record_appears_in_subscribers(self):
         """Новая запись пользователя появляется в 
-        ленте тех, кто на него подписан."""
+        ленте тех, кто на него подписан.
+        """
         author = User.objects.create_user(username='author')
         authorized_client = Client()
         authorized_client.force_login(author)
