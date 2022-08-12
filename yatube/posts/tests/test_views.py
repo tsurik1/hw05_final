@@ -167,7 +167,7 @@ class FollowTests(TestCase):
 
     def test_new_user_record_appears_in_subscribers(self):
         """Новая запись пользователя появляется в 
-        ленте тех, кто на него подписан.
+            ленте тех, кто на него подписан.
         """
         author = User.objects.create_user(username='author')
         authorized_client = Client()
