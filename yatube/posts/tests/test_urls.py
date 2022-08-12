@@ -89,18 +89,20 @@ class StaticURLTests(TestCase):
     def test_private_pages_for_author(self):
         """Доступность шаблонов приватных страниц автору поста."""
         templates_url_names = {
-            'posts/create_post.html': reverse('posts:create_post'),
-            'posts/create_post.html': reverse('posts:post_edit',
-                                              args=(self.post.id,)),
-            'posts/follow.html': reverse('posts:follow_index')
+            reverse('posts:create_post'): 'posts/create_post.html',
+            reverse('posts:post_edit',
+                    args=(self.post.id,)): 'posts/create_post.html',
+
+            reverse('posts:follow_index'): 'posts/follow.html'
         }
-        for template, address in templates_url_names.items():
+        for address, template in templates_url_names.items():
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertTemplateUsed(response, template)
 
     def test_urls_uses_correct_template(self):
-        """Доступность шаблонов публичных страниц неавторизованному пользователю."""
+        """Доступность шаблонов публичных страниц
+        неавторизованному пользователю."""
         templates_url_names = {
             'posts/index.html': reverse('posts:index'),
             'posts/group_list.html': reverse(

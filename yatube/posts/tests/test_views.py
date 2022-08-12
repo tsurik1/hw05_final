@@ -92,7 +92,8 @@ class TaskPagesTests(TestCase):
         self.assertEqual(response.context['page_obj'][0], self.post)
 
     def test_correct_context_post_edit(self):
-        """Контекст страницы создания/редактирования поста для авторизованного пользователя."""
+        """Контекст страницы создания/редактирования
+        поста для авторизованного пользователя."""
         response = self.authorized_client.get(reverse(
             'posts:post_edit', args=(self.post.id,)))
         self.assertIn('form', response.context)
@@ -136,7 +137,8 @@ class FollowTests(TestCase):
         cache.clear()
 
     def test_an_authorized_user_can_follow(self):
-        """Авторизованный пользователь может подписываться на других пользователей."""
+        """Авторизованный пользователь может
+        подписываться на других пользователей."""
         follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
         self.authorized = Client()
@@ -147,7 +149,8 @@ class FollowTests(TestCase):
         self.assertEqual(Follow.objects.count(), follows_count + 1)
 
     def test_an_authorized_user_can_unfollow(self):
-        """Авторизованный пользователь может отписываться от других пользователей."""
+        """Авторизованный пользователь может
+        отписываться от других пользователей."""
         follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
         self.authorized = Client()
@@ -161,7 +164,8 @@ class FollowTests(TestCase):
         self.assertEqual(Follow.objects.count(), follows_count)
 
     def test_new_user_record_appears_in_subscribers(self):
-        """Новая запись пользователя появляется в ленте тех, кто на него подписан."""
+        """Новая запись пользователя появляется в 
+        ленте тех, кто на него подписан."""
         author = User.objects.create_user(username='author')
         authorized_client = Client()
         authorized_client.force_login(author)
