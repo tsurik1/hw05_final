@@ -44,7 +44,7 @@ class StaticURLTests(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_private_address_redirect(self):
-        """Приватные адреса не доступны для неавторизованных 
+        """Приватные адреса не доступны для неавторизованных
         пользователей, ведут на страницу авторизации.
         """
         lgn = reverse('users:login')
@@ -71,8 +71,8 @@ class StaticURLTests(TestCase):
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_not_the_author_leads_to_the_post_view_page(self):
-        """Адрес редактирования поста для 
-        авторизованного пользователя, не являющегося 
+        """Адрес редактирования поста для
+        авторизованного пользователя, не являющегося
         автором поста, должен вести на страницу просмотра поста.
         """
         user = User.objects.create_user(username='username')

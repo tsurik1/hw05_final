@@ -166,7 +166,7 @@ class FollowTests(TestCase):
         self.assertEqual(Follow.objects.count(), follows_count)
 
     def test_new_user_record_appears_in_subscribers(self):
-        """Новая запись пользователя появляется в 
+        """Новая запись пользователя появляется в
             ленте тех, кто на него подписан.
         """
         author = User.objects.create_user(username='author')

@@ -119,7 +119,7 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count)
 
     def test_redirect(self):
-        """Авторизованный пользователь не может редактировать 
+        """Авторизованный пользователь не может редактировать
         чужой пост и перенаправляется на страницу поста.
         """
         new_group = Group.objects.create(
@@ -153,7 +153,7 @@ class PostFormTest(TestCase):
         self.assertEqual(Post.objects.count(), posts_count)
 
     def test_an_authorized_user_can_create_a_comment(self):
-        """Авторизованный пользователь может создать комментарий, 
+        """Авторизованный пользователь может создать комментарий,
         происходит редирект на страницу поста.
         """
         comments_count = Comment.objects.count()
