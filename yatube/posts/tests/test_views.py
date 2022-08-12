@@ -10,7 +10,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..forms import PostForm
-from ..models import Group, Post
+from ..models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -20,8 +20,7 @@ TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class TaskPagesTests(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username='auth')
         cls.small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x02\x00'
@@ -59,29 +58,19 @@ class TaskPagesTests(TestCase):
         cache.clear()
 
     def test_correct_context_index(self):
-        """Тест проверки контекста для индексной страницы."""
+        """Правильность контекста главной страницы."""
         response = self.client.get(reverse('posts:index'))
         self.assertIn('page_obj', response.context)
         self.assertEqual(response.context['page_obj'][0], self.post)
 
     def test_correct_context_group(self):
-        """Тест контекста страницы группы."""
+        """Правильность контекста списка постов группы."""
         response = self.client.get(reverse(
             'posts:group_list', kwargs={'slug': 'test-slug'}))
         self.assertIn('group', response.context)
         self.assertIn('page_obj', response.context)
         self.assertEqual(response.context['page_obj'][0].group,
                          self.group)
-        self.assertEqual(response.context['page_obj'][0], self.post)
-
-    def test_correct_context_profile(self):
-        """Тест контекста страницы профиля."""
-        response = self.client.get(reverse(
-            'posts:profile', kwargs={'username': 'auth'}))
-        self.assertIn('author', response.context)
-        self.assertIn('page_obj', response.context)
-        self.assertEqual(response.context['author'],
-                         self.user)
         self.assertEqual(response.context['page_obj'][0], self.post)
 
     def test_correct_context_post_detail(self):
@@ -92,8 +81,18 @@ class TaskPagesTests(TestCase):
         self.assertEqual(response.context['post'],
                          self.post)
 
+    def test_correct_context_profile(self):
+        """Правильность контекста профиля пользователя."""
+        response = self.client.get(reverse(
+            'posts:profile', kwargs={'username': 'auth'}))
+        self.assertIn('author', response.context)
+        self.assertIn('page_obj', response.context)
+        self.assertEqual(response.context['author'],
+                         self.user)
+        self.assertEqual(response.context['page_obj'][0], self.post)
+
     def test_correct_context_post_edit(self):
-        """Тест контекста страниц создания/редактирования поста."""
+        """Контекст страницы создания/редактирования поста для авторизованного пользователя."""
         response = self.authorized_client.get(reverse(
             'posts:post_edit', args=(self.post.id,)))
         self.assertIn('form', response.context)
@@ -101,37 +100,91 @@ class TaskPagesTests(TestCase):
         if 'is_edit' in response.context:
             self.assertEqual(response.context['is_edit'], True)
 
-    def test_post_creation_check(self):
-        """Проверка при создании поста."""
-        test_post = Post.objects.create(
-            author=self.user,
-            text='Тестовый пост',
-            group=self.group,
-            image=self.uploaded
+
+class FollowTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username='auth')
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
-        response = self.authorized_client.get(reverse('posts:index'))
-        self.assertEqual(response.context['page_obj'][0].text,
-                         test_post.text)
+        cls.uploaded = SimpleUploadedFile(
+            name='small.gif',
+            content=cls.small_gif,
+            content_type='image/gif'
+        )
+        cls.group = Group.objects.create(
+            title='test-title',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый постfasdfasdf',
+            group=cls.group,
+            image=cls.uploaded
+        )
 
-        response = self.authorized_client.get(reverse(
-            'posts:group_list', kwargs={'slug': 'test-slug'}))
-        self.assertEqual(response.context['page_obj'][0].text,
-                         test_post.text)
+    def setUp(self):
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+        cache.clear()
 
-        response = self.authorized_client.get(reverse(
-            'posts:profile', kwargs={'username': 'auth'}))
-        self.assertEqual(response.context['page_obj'][0].text,
-                         test_post.text)
+    def test_an_authorized_user_can_follow(self):
+        """Авторизованный пользователь может подписываться на других пользователей."""
+        follows_count = Follow.objects.count()
+        test_user = User.objects.create_user(username='pypa')
+        self.authorized = Client()
+        self.authorized.force_login(test_user)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(test_user.username,)),
+            follow=True)
+        self.assertEqual(Follow.objects.count(), follows_count + 1)
 
-    def test_cache_home_page(self):
-        """Тестирование кэша."""
-        response = self.client.get(reverse('posts:index'))
-        object_index1 = response.content
-        last_post = Post.objects.first()
-        last_post.delete()
-        response = self.client.get(reverse('posts:index'))
-        object_index2 = response.content
-        self.assertEqual(object_index1, object_index2)
+    def test_an_authorized_user_can_unfollow(self):
+        """Авторизованный пользователь может отписываться от других пользователей."""
+        follows_count = Follow.objects.count()
+        test_user = User.objects.create_user(username='pypa')
+        self.authorized = Client()
+        self.authorized.force_login(test_user)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(test_user.username,)),
+            follow=True)
+        self.authorized_client.get(
+            reverse('posts:profile_unfollow', args=(test_user.username,)),
+        )
+        self.assertEqual(Follow.objects.count(), follows_count)
+
+    def test_new_user_record_appears_in_subscribers(self):
+        """Новая запись пользователя появляется в ленте тех, кто на него подписан."""
+        author = User.objects.create_user(username='author')
+        authorized_client = Client()
+        authorized_client.force_login(author)
+        post = Post.objects.create(
+            author=self.user,
+            text='perfect'
+        )
+        authorized_client.get(
+            reverse('posts:profile_follow', args=(self.user.username,)),
+            follow=True)
+        response = authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        obj = response.context['page_obj'][0]
+        self.assertIn(post.text, obj.text)
+
+        left = User.objects.create_user(username='left')
+        authorized_unsubscribers_client = Client()
+        authorized_unsubscribers_client.force_login(left)
+        response_two = authorized_unsubscribers_client.get(
+            reverse('posts:follow_index')
+        )
+        self.assertNotIn(post.text, response_two)
 
 
 class PaginatorViewsTest(TestCase):
@@ -168,3 +221,29 @@ class PaginatorViewsTest(TestCase):
                 response = self.client.get(reverse('posts:index') + address)
         self.assertEqual(len(response.context.get(
             'page_obj').object_list), counts)
+
+
+class CacheTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username='auth')
+        cls.group = Group.objects.create(
+            title='test-title',
+            slug='test-slug',
+            description='Тестовое описание',
+        )
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый постfasdfasdf',
+            group=cls.group,
+        )
+
+    def test_cache_home_page(self):
+        """Тестирование кэша."""
+        response = self.client.get(reverse('posts:index'))
+        object_index1 = response.content
+        last_post = Post.objects.first()
+        last_post.delete()
+        response = self.client.get(reverse('posts:index'))
+        object_index2 = response.content
+        self.assertEqual(object_index1, object_index2)

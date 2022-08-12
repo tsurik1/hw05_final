@@ -13,8 +13,7 @@ User = get_user_model()
 class StaticURLTests(TestCase):
 
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username='auth')
         cls.group = Group.objects.create(
             title='test-title',
@@ -27,13 +26,12 @@ class StaticURLTests(TestCase):
         )
 
     def setUp(self):
-        self.user = User.objects.create_user(username='HasNoName')
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
         cache.clear()
 
     def test_urls_status_code_guest(self):
-        """Тестирование публичных адресов."""
+        """Публичные адреса доступны для неавторизованных пользователей."""
         templates_url_names = (
             reverse('posts:index'),
             reverse('posts:group_list', args=(self.group.slug,)),
@@ -45,25 +43,64 @@ class StaticURLTests(TestCase):
                 response = self.client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
+    def test_private_address_redirect(self):
+        """Приватные адреса не доступны для неавторизованных 
+        пользователей, ведут на страницу авторизации."""
+        lgn = reverse('users:login')
+        templates_url_names = (
+            reverse('posts:create_post'),
+            reverse('posts:post_edit', args=(self.post.id,)),
+            reverse('posts:follow_index')
+        )
+        for address in templates_url_names:
+            with self.subTest(address=address):
+                response = self.client.get(address)
+        self.assertRedirects(response, f'{lgn}?next={address}')
+
     def test_urls_status_code_authorized(self):
-        """Тестирование адресов, доступных автору поста."""
-        self.authorized_client.force_login(StaticURLTests.user)
+        """Приватные адреса доступны для автора."""
         templates_url_names = (
             reverse('posts:post_edit', args=(self.post.id,)),
             reverse('posts:create_post'),
+            reverse('posts:follow_index')
         )
         for address in templates_url_names:
             with self.subTest(address=address):
                 response = self.authorized_client.get(address)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
+    def test_not_the_author_leads_to_the_post_view_page(self):
+        """Адрес редактирования поста для 
+        авторизованного пользователя, не являющегося 
+        автором поста, должен вести на страницу просмотра поста."""
+        user = User.objects.create_user(username='username')
+        self.authorized_client.force_login(user)
+        response = self.authorized_client.post(
+            reverse('posts:post_edit', args=(self.post.id,)))
+        self.assertRedirects(response, reverse(
+            'posts:post_detail', args=(self.post.id,)))
+
     def test_unexisting(self):
-        """Тестирование несуществующей страницы."""
+        """Неавторизованный пользователь при запросе
+        несуществующей страницы  переходит на 404."""
         response = self.client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
+    def test_private_pages_for_author(self):
+        """Доступность шаблонов приватных страниц автору поста."""
+        templates_url_names = {
+            'posts/create_post.html': reverse('posts:create_post'),
+            'posts/create_post.html': reverse('posts:post_edit',
+                                              args=(self.post.id,)),
+            'posts/follow.html': reverse('posts:follow_index')
+        }
+        for template, address in templates_url_names.items():
+            with self.subTest(address=address):
+                response = self.authorized_client.get(address)
+                self.assertTemplateUsed(response, template)
+
     def test_urls_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
+        """Доступность шаблонов публичных страниц неавторизованному пользователю."""
         templates_url_names = {
             'posts/index.html': reverse('posts:index'),
             'posts/group_list.html': reverse(
@@ -79,37 +116,6 @@ class StaticURLTests(TestCase):
                 self.assertTemplateUsed(response, template)
 
     def test_urls_404(self):
-        """Страница 404 отдает соответсвующий шаблон."""
+        """Несуществующему адресу соответствует шаблон '404.html'."""
         response = self.client.get('/unexisting_page/')
         self.assertTemplateUsed(response, 'core/404.html')
-
-    def test_private_pages_for_author(self):
-        """Тестирование доступности шаблонов приватных страниц автора."""
-        self.authorized_client.force_login(StaticURLTests.user)
-        templates_url_names = (
-            reverse('posts:create_post'),
-            reverse('posts:post_edit', args=(self.post.id,)),
-        )
-        for address in templates_url_names:
-            with self.subTest(address=address):
-                response = self.authorized_client.get(address)
-                self.assertTemplateUsed(response, 'posts/create_post.html')
-
-    def test_private_address_redirect(self):
-        """Тестирование перенаправления не автора на логин."""
-        lgn = reverse('users:login')
-        templates_url_names = (
-            reverse('posts:create_post'),
-            reverse('posts:post_edit', args=(self.post.id,)),
-        )
-        for address in templates_url_names:
-            with self.subTest(address=address):
-                response = self.client.get(address)
-        self.assertRedirects(response, f'{lgn}?next={address}')
-
-    def test_not_the_author_leads_to_the_post_view_page(self):
-        """Тестирование перенаправления не автора на страницу поста."""
-        response = self.authorized_client.post(
-            reverse('posts:post_edit', args=(self.post.id,)))
-        self.assertRedirects(response, reverse(
-            'posts:post_detail', args=(self.post.id,)))

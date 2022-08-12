@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Comment, Follow, Group, Post, User
+from ..models import Comment, Group, Post, User
 
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -58,7 +58,8 @@ class PostFormTest(TestCase):
         self.authorized_client.force_login(self.user)
 
     def test_count_post(self):
-        """Валидная форма создает запись в Post."""
+        """Создание поста при отправке валидной
+        формы авторизованным пользователем."""
         posts_count = Post.objects.count()
         form_data = {
             'text': 'Тестовый пост',
@@ -78,7 +79,7 @@ class PostFormTest(TestCase):
                              'username': PostFormTest.user.username}))
 
     def test_post_change(self):
-        """Проверка редактирования поста."""
+        """Редактирование поста при отправке валидной формы автором поста."""
         new_group = Group.objects.create(
             title='test group',
             slug='slugg',
@@ -103,8 +104,21 @@ class PostFormTest(TestCase):
         self.assertRedirects(response, reverse(
             'posts:post_detail', args=(test_post.id,)))
 
+    def test_redirect_client_to_login(self):
+        """Неавторизованный пользователь не может создать пост,
+        и его перенаправляет на страницу авторизации."""
+        posts_count = Post.objects.count()
+        response = self.guest_client.post(
+            reverse('posts:create_post'), follow=True
+        )
+        lgn = reverse('users:login')
+        crt = reverse('posts:create_post')
+        self.assertRedirects(response, f'{lgn}?next={crt}')
+        self.assertEqual(Post.objects.count(), posts_count)
+
     def test_redirect(self):
-        """Проверка перенаправления"""
+        """Авторизованный пользователь не может редактировать 
+        чужой пост и перенаправляется на страницу поста."""
         new_group = Group.objects.create(
             title='test group',
             slug='slugg',
@@ -135,29 +149,9 @@ class PostFormTest(TestCase):
         self.assertNotEqual(test_post.group, form_data['group'])
         self.assertEqual(Post.objects.count(), posts_count)
 
-    def test_redirect_client_to_login(self):
-        """Проверка перенаправления клиента на логин."""
-        posts_count = Post.objects.count()
-        response = self.guest_client.post(
-            reverse('posts:create_post'), follow=True
-        )
-        lgn = reverse('users:login')
-        crt = reverse('posts:create_post')
-        self.assertRedirects(response, f'{lgn}?next={crt}')
-        self.assertEqual(Post.objects.count(), posts_count)
-
-    def test_only_authorized_user_can_comment(self):
-        """Проверка: пост может комментировать только авторизованный."""
-        form_data = {
-            'text': 'test comment',
-        }
-        response = self.client.post(reverse(
-            'posts:add_comment', args=(self.post.id,)), data=form_data
-        )
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
-
-    def test_after_submitting_the_comment_appears_on_the_page(self):
-        """Проверка: после отправки коммент появляется на стр."""
+    def test_an_authorized_user_can_create_a_comment(self):
+        """Авторизованный пользователь может создать комментарий, 
+        происходит редирект на страницу поста."""
         comments_count = Comment.objects.count()
         form_data = {
             'text': 'Тестовый текст из формы теста',
@@ -178,43 +172,16 @@ class PostFormTest(TestCase):
         )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
 
-    def test_an_authorized_user_can_follow_or_ufollow(self):
-        """Авторизованный пользователь может подписываться и отписываться."""
-        follows_count = Follow.objects.count()
-        pypa = User.objects.create_user(username='pypa')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(pypa)
-        self.authorized_client.get(
-            reverse('posts:profile_follow', args=(self.user.username,)),
-            follow=True)
-        self.assertEqual(Follow.objects.count(), follows_count + 1)
-        self.authorized_client.get(
-            reverse('posts:profile_unfollow', args=(self.user.username,)),
+    def test_only_authorized_user_can_comment(self):
+        """Неавторизованный пользователь не может создать комментарий,
+        происходит редирект на страницу авторизации."""
+        form_data = {
+            'text': 'test comment',
+        }
+        response = self.client.post(reverse(
+            'posts:add_comment', args=(self.post.id,)), data=form_data
         )
-        self.assertEqual(Follow.objects.count(), follows_count)
-
-    def test_user_feed(self):
-        """Новая запись появляется в ленте подписчиков"""
-        author = User.objects.create_user(username='author')
-        authorized_client = Client()
-        authorized_client.force_login(author)
-        post = Post.objects.create(
-            author=self.user,
-            text='perfect'
-        )
-        authorized_client.get(
-            reverse('posts:profile_follow', args=(self.user.username,)),
-            follow=True)
-        response = authorized_client.get(
-            reverse('posts:follow_index')
-        )
-        obj = response.context['page_obj'][0]
-        self.assertIn(post.text, obj.text)
-
-        left = User.objects.create_user(username='left')
-        authorized_unsubscribers_client = Client()
-        authorized_unsubscribers_client.force_login(left)
-        response_two = authorized_unsubscribers_client.get(
-            reverse('posts:follow_index')
-        )
-        self.assertNotIn(post.text, response_two)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        lgn = reverse('users:login')
+        crt = reverse('posts:add_comment', args=(self.post.id,))
+        self.assertRedirects(response, f'{lgn}?next={crt}')
