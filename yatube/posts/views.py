@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import cache_page
@@ -8,7 +9,7 @@ from .models import Follow, Group, Post, User
 from .utils import get_page_obj
 
 
-@cache_page(20, key_prefix='index_page')
+@cache_page(settings.SECONDS, key_prefix='index_page')
 def index(request):
     posts = Post.objects.select_related('author', 'group')
     context = {
@@ -19,7 +20,7 @@ def index(request):
 
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    posts = group.posts.select_related('group')
+    posts = group.posts.all()
     context = {
         'group': group,
         'page_obj': get_page_obj(request, posts)
@@ -91,7 +92,7 @@ def add_comment(request, post_id):
         comment = form.save(commit=False)
         comment.author = request.user
         comment.post = post
-        comment.save()
+        form.save()
     return redirect('posts:post_detail', post_id=post_id)
 
 
@@ -108,16 +109,13 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    is_following = Follow.objects.filter(user=request.user, author=author)
-    if request.user != author and not is_following.exists():
-        Follow.objects.create(user=request.user, author=author)
+    if request.user != author:
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('posts:profile', author.username)
 
 
 @login_required
 def profile_unfollow(request, username):
     author = get_object_or_404(User, username=username)
-    is_following = Follow.objects.filter(user=request.user, author=author)
-    if is_following.exists():
-        is_following.delete()
+    Follow.objects.filter(user=request.user, author=author).delete()
     return redirect('posts:profile', username=username)

@@ -10,7 +10,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..forms import PostForm
-from ..models import Group, Post, Follow
+from ..models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -84,7 +84,7 @@ class TaskPagesTests(TestCase):
     def test_correct_context_profile(self):
         """Правильность контекста профиля пользователя."""
         response = self.client.get(reverse(
-            'posts:profile', kwargs={'username': 'auth'}))
+            'posts:profile', args=(self.user,)))
         self.assertIn('author', response.context)
         self.assertIn('page_obj', response.context)
         self.assertEqual(response.context['author'],
@@ -142,8 +142,6 @@ class FollowTests(TestCase):
         """
         follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
-        self.authorized = Client()
-        self.authorized.force_login(test_user)
         self.authorized_client.get(
             reverse('posts:profile_follow', args=(test_user.username,)),
             follow=True)
@@ -153,45 +151,42 @@ class FollowTests(TestCase):
         """Авторизованный пользователь может
         отписываться от других пользователей.
         """
-        follows_count = Follow.objects.count()
         test_user = User.objects.create_user(username='pypa')
-        self.authorized = Client()
-        self.authorized.force_login(test_user)
-        self.authorized_client.get(
-            reverse('posts:profile_follow', args=(test_user.username,)),
-            follow=True)
+        Follow.objects.create(user=self.user,
+                              author=test_user)
+        follows_count = Follow.objects.count()
         self.authorized_client.get(
             reverse('posts:profile_unfollow', args=(test_user.username,)),
         )
-        self.assertEqual(Follow.objects.count(), follows_count)
+        self.assertEqual(Follow.objects.count(), follows_count - 1)
 
     def test_new_user_record_appears_in_subscribers(self):
         """Новая запись пользователя появляется в
             ленте тех, кто на него подписан.
         """
-        author = User.objects.create_user(username='author')
-        authorized_client = Client()
-        authorized_client.force_login(author)
-        post = Post.objects.create(
-            author=self.user,
-            text='perfect'
+        post_count = Post.objects.count()
+        test_user = User.objects.create_user(username='pypa')
+        Post.objects.create(
+            text='текстовый пост для проверки follow_index',
+            author=test_user
         )
-        authorized_client.get(
-            reverse('posts:profile_follow', args=(self.user.username,)),
-            follow=True)
-        response = authorized_client.get(
-            reverse('posts:follow_index')
+        Follow.objects.create(
+            user=self.user,
+            author=test_user
         )
-        obj = response.context['page_obj'][0]
-        self.assertIn(post.text, obj.text)
+        post_count += 1
+        self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertEqual(Post.objects.count(), post_count)
 
         left = User.objects.create_user(username='left')
-        authorized_unsubscribers_client = Client()
-        authorized_unsubscribers_client.force_login(left)
-        response_two = authorized_unsubscribers_client.get(
+        Follow.objects.create(
+            user=left,
+            author=test_user
+        )
+        self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotIn(post.text, response_two)
+        self.assertEqual(Post.objects.count(), post_count)
 
 
 class PaginatorViewsTest(TestCase):
@@ -212,10 +207,6 @@ class PaginatorViewsTest(TestCase):
             text='Тестовый постfasdfasdf',
             group=cls.group)
             for _ in range(cls.posts_count)])
-
-    def setUp(self):
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
 
     def test_page_contains_ten_records(self):
         """тестирование паджинатора 1-2 стр"""
@@ -239,18 +230,16 @@ class CacheTests(TestCase):
             slug='test-slug',
             description='Тестовое описание',
         )
-        cls.post = Post.objects.create(
-            author=cls.user,
-            text='Тестовый постfasdfasdf',
-            group=cls.group,
-        )
 
     def test_cache_home_page(self):
         """Тестирование кэша."""
         response = self.client.get(reverse('posts:index'))
-        object_index1 = response.content
-        last_post = Post.objects.first()
-        last_post.delete()
-        response = self.client.get(reverse('posts:index'))
-        object_index2 = response.content
-        self.assertEqual(object_index1, object_index2)
+        Post.objects.create(
+            text='Тестовый пост',
+            author=self.user,
+        )
+        response_two = self.client.get(reverse('posts:index'))
+        self.assertEqual(response.content, response_two.content)
+        cache.clear()
+        response_three = self.client.get(reverse('posts:index'))
+        self.assertNotEqual(response_two.content, response_three.content)

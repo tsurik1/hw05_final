@@ -86,7 +86,7 @@ class StaticURLTests(TestCase):
         """Неавторизованный пользователь при запросе
         несуществующей страницы  переходит на 404.
         """
-        response = self.client.get('/unexisting_page/')
+        response = self.authorized_client.get('/unexisting_page/')
         self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
 
     def test_private_pages_for_author(self):

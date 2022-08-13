@@ -156,9 +156,10 @@ class PostFormTest(TestCase):
         """Авторизованный пользователь может создать комментарий,
         происходит редирект на страницу поста.
         """
+        text_comm = 'qjinewijw'
         comments_count = Comment.objects.count()
         form_data = {
-            'text': 'Тестовый текст из формы теста',
+            'text': text_comm,
         }
         response = self.authorized_client.post(
             reverse(
@@ -168,10 +169,11 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response, f'/posts/{self.post.id}/')
+        self.assertRedirects(response, reverse(
+            'posts:post_detail', args=(self.post.id,)))
         self.assertTrue(
             Comment.objects.filter(
-                text='Тестовый текст из формы теста'
+                text=text_comm
             ).exists()
         )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
@@ -180,6 +182,7 @@ class PostFormTest(TestCase):
         """Неавторизованный пользователь не может создать комментарий,
         происходит редирект на страницу авторизации.
         """
+        comments_count = Comment.objects.count()
         form_data = {
             'text': 'test comment',
         }
@@ -190,3 +193,4 @@ class PostFormTest(TestCase):
         lgn = reverse('users:login')
         crt = reverse('posts:add_comment', args=(self.post.id,))
         self.assertRedirects(response, f'{lgn}?next={crt}')
+        self.assertEqual(Comment.objects.count(), comments_count)

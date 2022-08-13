@@ -9,7 +9,8 @@ class PostForm(forms.ModelForm):
         fields = ('text', 'group', 'image')
         labels = {
             'text': 'Текст поста',
-            'group': 'Группа'
+            'group': 'Группа',
+            'image': 'Картинка'
         }
 
 
