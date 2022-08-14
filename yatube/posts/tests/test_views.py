@@ -164,29 +164,34 @@ class FollowTests(TestCase):
         """Новая запись пользователя появляется в
             ленте тех, кто на него подписан.
         """
-        post_count = Post.objects.count()
         test_user = User.objects.create_user(username='pypa')
-        Post.objects.create(
-            text='текстовый пост для проверки follow_index',
-            author=test_user
-        )
-        Follow.objects.create(
-            user=self.user,
-            author=test_user
-        )
-        post_count += 1
-        self.authorized_client.get(reverse('posts:follow_index'))
-        self.assertEqual(Post.objects.count(), post_count)
-
-        left = User.objects.create_user(username='left')
-        Follow.objects.create(
-            user=left,
-            author=test_user
+        Follow.objects.create(user=self.user,
+                              author=test_user)
+        post = Post.objects.create(
+            author=test_user,
+            text='perfect'
         )
         self.authorized_client.get(
+            reverse('posts:profile_follow', args=(test_user.username,)),
+            follow=True)
+        response = self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertEqual(Post.objects.count(), post_count)
+        content_index = response.context['page_obj'][0]
+        self.assertEqual(post, content_index)
+
+    def test_new_user_does_not_appear_in_subscribers(self):
+        """Новая запись пользователя не появляется
+        в ленте тех, кто не подписан."""
+        test_user = User.objects.create_user(username='мира')
+        post = Post.objects.create(
+            author=test_user,
+            text='perfecto'
+        )
+        response = self.authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        self.assertNotEqual(post, response)
 
 
 class PaginatorViewsTest(TestCase):

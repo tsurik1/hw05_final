@@ -41,11 +41,6 @@ class PostFormTest(TestCase):
             group=cls.group,
             image=cls.uploaded
         )
-        cls.comment = Comment.objects.create(
-            text='Тестовый комментарий',
-            post=cls.post,
-            author=cls.user
-        )
 
     @classmethod
     def tearDownClass(cls):
@@ -169,13 +164,12 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
+        comment = Comment.objects.first()
         self.assertRedirects(response, reverse(
             'posts:post_detail', args=(self.post.id,)))
-        self.assertTrue(
-            Comment.objects.filter(
-                text=text_comm
-            ).exists()
-        )
+        self.assertEqual(text_comm, comment.text)
+        self.assertEqual(self.user, comment.author)
+        self.assertEqual(self.post, comment.post)
         self.assertEqual(Comment.objects.count(), comments_count + 1)
 
     def test_only_authorized_user_can_comment(self):
@@ -189,8 +183,7 @@ class PostFormTest(TestCase):
         response = self.client.post(reverse(
             'posts:add_comment', args=(self.post.id,)), data=form_data
         )
-        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         lgn = reverse('users:login')
         crt = reverse('posts:add_comment', args=(self.post.id,))
-        self.assertRedirects(response, f'{lgn}?next={crt}')
+        self.assertRedirects(response, f'{lgn}?next={crt}', status_code = HTTPStatus.FOUND)
         self.assertEqual(Comment.objects.count(), comments_count)
