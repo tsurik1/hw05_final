@@ -102,7 +102,7 @@ def follow_index(request):
         author__following__user=request.user)
     context = {
         'page_obj': get_page_obj(request, posts),
-        'Follow': True
+        'follow': True
     }
     return render(request, 'posts/follow.html', context)
 
