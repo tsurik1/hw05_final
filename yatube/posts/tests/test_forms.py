@@ -185,5 +185,6 @@ class PostFormTest(TestCase):
         )
         lgn = reverse('users:login')
         crt = reverse('posts:add_comment', args=(self.post.id,))
-        self.assertRedirects(response, f'{lgn}?next={crt}', status_code = HTTPStatus.FOUND)
+        self.assertRedirects(response, f'{lgn}?next={crt}',
+                             status_code=HTTPStatus.FOUND)
         self.assertEqual(Comment.objects.count(), comments_count)
