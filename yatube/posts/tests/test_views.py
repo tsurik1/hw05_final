@@ -191,7 +191,8 @@ class FollowTests(TestCase):
         response = self.authorized_client.get(
             reverse('posts:follow_index')
         )
-        self.assertNotEqual(post, response)
+        posts_all = response.context['page_obj']
+        self.assertNotIn(post, posts_all)
 
 
 class PaginatorViewsTest(TestCase):
