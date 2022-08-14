@@ -12,7 +12,8 @@ from .utils import get_page_obj
 def index(request):
     posts = Post.objects.select_related('author', 'group')
     context = {
-        'page_obj': get_page_obj(request, posts)
+        'page_obj': get_page_obj(request, posts),
+        'index': True,
     }
     return render(request, 'posts/index.html', context)
 
@@ -100,7 +101,8 @@ def follow_index(request):
     posts = Post.objects.filter(
         author__following__user=request.user)
     context = {
-        'page_obj': get_page_obj(request, posts)
+        'page_obj': get_page_obj(request, posts),
+        'Follow': True
     }
     return render(request, 'posts/follow.html', context)
 
