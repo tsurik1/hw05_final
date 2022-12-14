@@ -11,7 +11,6 @@ ALLOWED_HOSTS = [
 '127.0.0.1',
 '[::1]',
 'testserver',
-'51.250.64.76',
 ]
 
 NUMBER_OF_POSTED = 10
