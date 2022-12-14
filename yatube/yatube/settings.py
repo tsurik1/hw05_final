@@ -6,12 +6,7 @@ SECRET_KEY = 'd%f6a4s%ml07*=*ty_)8&2qi_oh*07gzleb1h&4w1cyqjdc%%-'
 
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '[::1]',
-    'testserver',
-]
+ALLOWED_HOSTS = ['xxx.xxx.xxx.xxx', '127.0.0.1', 'localhost']
 
 NUMBER_OF_POSTED = 10
 
